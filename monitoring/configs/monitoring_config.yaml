@@ -1,0 +1,79 @@
+# Veritas Contract Monitoring Configuration
+version: "1.0"
+network: "testnet"
+contract_address: "0x..."
+
+# Monitoring Targets
+monitoring:
+  events:
+    enabled: true
+    events_to_track:
+      - "VoteCommitted"
+      - "VoteRevealed"
+      - "VotingExtended"
+      - "EmergencyClosed"
+  
+  transactions:
+    enabled: true
+    track_functions:
+      - "commit_vote"
+      - "reveal_vote"
+      - "extend_voting"
+      - "emergency_close"
+  
+  state:
+    enabled: true
+    polling_interval: 30  # seconds
+    metrics_to_track:
+      - "total_voters"
+      - "voting_status"
+      - "tally_changes"
+  
+  gas:
+    enabled: true
+    thresholds:
+      warning: 0.01  # ETH
+      critical: 0.05  # ETH
+
+# Alert Configuration
+alerts:
+  security:
+    - name: "High Admin Activity"
+      condition: "admin_function_calls > 5/hour"
+      severity: "high"
+      channels: ["email", "discord"]
+    
+    - name: "Unusual Voting Pattern"
+      condition: "vote_rate > 100/minute"
+      severity: "medium"
+      channels: ["email"]
+    
+    - name: "Failed Transaction Spike"
+      condition: "failed_transactions > 10/hour"
+      severity: "medium"
+      channels: ["email"]
+  
+  performance:
+    - name: "High Gas Usage"
+      condition: "gas_price > 100_gwei"
+      severity: "low"
+      channels: ["slack"]
+    
+    - name: "Contract Unresponsive"
+      condition: "no_response > 5_minutes"
+      severity: "high"
+      channels: ["email", "discord", "slack"]
+
+# Data Retention
+retention:
+  events: "30_days"
+  transactions: "90_days"
+  metrics: "1_year"
+  logs: "6_months"
+
+# Reporting
+reporting:
+  daily_report: true
+  weekly_summary: true
+  monthly_analysis: true
+  security_digest: true

@@ -1,0 +1,18 @@
+[package]
+name = "veritas"
+version = "0.4.0"
+edition = "2024_07"
+
+[dependencies]
+starknet = ">=2.8.0"
+
+[[target.starknet-contract]]
+
+[dev-dependencies]
+cairo_test = "2.16.0"
+
+[tool.fmt]
+sort-module-level-items = true
+
+[tool.snforge]
+exit_first = true

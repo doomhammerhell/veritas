@@ -1,0 +1,123 @@
+name: Security Issue
+description: Report a security vulnerability
+title: "[Security]: "
+labels: ["security", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # Security Vulnerability Report
+
+        **IMPORTANT**: If this is a CRITICAL security issue, please DO NOT file a public issue. 
+        Instead, send an email to security@veritas.io with details about the vulnerability.
+
+        For non-critical security issues, please use this template.
+
+  - type: textarea
+    id: vulnerability-description
+    attributes:
+      label: Vulnerability Description
+      description: A clear and concise description of the security vulnerability
+      placeholder: Describe the security vulnerability...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity Level
+      description: How severe is this vulnerability?
+      options:
+        - Critical - Immediate danger, requires immediate action
+        - High - Significant security risk
+        - Medium - Moderate security risk
+        - Low - Minor security issue
+    validations:
+      required: true
+
+  - type: dropdown
+    id: vulnerability-type
+    attributes:
+      label: Vulnerability Type
+      description: What type of vulnerability is this?
+      options:
+        - Remote Code Execution (RCE)
+        - SQL Injection
+        - Cross-Site Scripting (XSS)
+        - Authentication/Authorization Bypass
+        - Denial of Service (DoS)
+        - Information Disclosure
+        - Cryptographic Issue
+        - Smart Contract Vulnerability
+        - Input Validation
+        - Configuration Issue
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected-components
+    attributes:
+      label: Affected Components
+      description: Which components are affected by this vulnerability?
+      placeholder: List all affected components...
+
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: Reproduction Steps
+      description: Steps to reproduce the vulnerability
+      placeholder: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Enter '....'
+        4. See vulnerability
+    validations:
+      required: true
+
+  - type: textarea
+    id: proof-of-concept
+    attributes:
+      label: Proof of Concept
+      description: Code, screenshots, or detailed steps demonstrating the vulnerability
+      render: shell
+      placeholder: Provide proof of concept...
+
+  - type: textarea
+    id: impact-assessment
+    attributes:
+      label: Impact Assessment
+      description: What is the potential impact of this vulnerability?
+      placeholder: Describe the potential impact...
+
+  - type: textarea
+    id: mitigation-suggestions
+    attributes:
+      label: Mitigation Suggestions
+      description: Do you have any suggestions for mitigating this vulnerability?
+      placeholder: Suggest mitigation strategies...
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Information
+      description: Environment where the vulnerability was discovered
+      placeholder: |
+        - OS: [e.g. Ubuntu 22.04, macOS 13.0, Windows 11]
+        - Node.js version: [e.g. 20.x]
+        - Cairo version: [e.g. 2.8.0]
+        - Network: [e.g. Starknet testnet, mainnet]
+        - Browser: [e.g. Chrome 120, Firefox 121]
+
+  - type: checkboxes
+    id: disclosure-policy
+    attributes:
+      label: Disclosure Policy
+      description: Please confirm you understand our disclosure policy
+      options:
+        - label: I understand this vulnerability will be handled according to our security policy
+          required: true
+        - label: I agree to follow responsible disclosure guidelines
+          required: true
+        - label: I understand that public disclosure may be delayed until a fix is available
+          required: true

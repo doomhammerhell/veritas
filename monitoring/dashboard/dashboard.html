@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Veritas Monitoring Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .card h3 { margin: 0 0 15px 0; color: #333; }
+        .metric { font-size: 2em; font-weight: bold; color: #007bff; margin: 10px 0; }
+        .status { padding: 5px 10px; border-radius: 4px; font-size: 0.9em; }
+        .status.online { background: #d4edda; color: #155724; }
+        .status.warning { background: #fff3cd; color: #856404; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .alert { background: #f8d7da; border: 1px solid #f5c6cb; padding: 10px; border-radius: 4px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🛡️ Veritas Monitoring Dashboard</h1>
+    <div class="dashboard">
+        <div class="card">
+            <h3>Contract Status</h3>
+            <div class="status online">● Online</div>
+            <p>Contract is responding normally</p>
+        </div>
+        
+        <div class="card">
+            <h3>Total Voters</h3>
+            <div class="metric" id="total-voters">0</div>
+            <p>Unique addresses that have committed votes</p>
+        </div>
+        
+        <div class="card">
+            <h3>Active Votes</h3>
+            <div class="metric" id="active-votes">0</div>
+            <p>Currently committed votes</p>
+        </div>
+        
+        <div class="card">
+            <h3>Gas Price</h3>
+            <div class="metric" id="gas-price">0 Gwei</div>
+            <p>Current network gas price</p>
+        </div>
+        
+        <div class="card">
+            <h3>Recent Transactions</h3>
+            <div id="recent-tx">
+                <p>Loading recent transactions...</p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>Alerts</h3>
+            <div id="alerts">
+                <p>No active alerts</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Simulated real-time updates
+        function updateMetrics() {
+            // In production, fetch real data from monitoring API
+            document.getElementById('total-voters').textContent = Math.floor(Math.random() * 100);
+            document.getElementById('active-votes').textContent = Math.floor(Math.random() * 50);
+            document.getElementById('gas-price').textContent = (Math.random() * 100).toFixed(1) + ' Gwei';
+        }
+        
+        // Update metrics every 5 seconds
+        setInterval(updateMetrics, 5000);
+        
+        // Initial load
+        updateMetrics();
+    </script>
+</body>
+</html>
