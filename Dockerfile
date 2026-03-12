@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for Veritas
 
 # Stage 1: Build stage
-FROM node:20-alpine AS builder
+FROM node:25-alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -53,7 +53,7 @@ RUN cd frontend && npm run build
 RUN cd docs && npm run build
 
 # Stage 2: Production stage
-FROM node:20-alpine AS production
+FROM node:25-alpine AS production
 
 # Install runtime dependencies
 RUN apk add --no-cache \
