@@ -1,0 +1,126 @@
+# Complete Render Configuration for Veritas
+# Auto-detects and deploys all services: backend, monitoring, frontend, tudo
+
+services:
+  # Main Veritas Backend API
+  - type: web
+    name: veritas-api
+    env: node
+    plan: free
+    buildCommand: "npm run build"
+    startCommand: "npm start"
+    healthCheckPath: /api/health
+    autoDeploy: true
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DOCKER
+        value: true
+      - key: API_URL
+        value: https://veritas-ww2z.onrender.com
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: STARKNET_NETWORK
+        value: testnet
+      - key: INFURA_PROJECT_ID
+        sync: false
+
+  # Frontend Application
+  - type: web
+    name: veritas-frontend
+    env: static
+    plan: free
+    buildCommand: "cd frontend && npm run build"
+    staticPublishPath: ./frontend/build
+    autoDeploy: true
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://veritas-ww2z.onrender.com
+      - key: REACT_APP_NETWORK
+        value: testnet
+      - key: REACT_APP_CONTRACT_ADDRESS
+        sync: false
+
+  # Documentation Site
+  - type: web
+    name: veritas-docs
+    env: static
+    plan: free
+    buildCommand: "cd docs && npm run build"
+    staticPublishPath: ./docs/build
+    autoDeploy: true
+    envVars:
+      - key: DOCS_URL
+        value: https://veritas-docs.onrender.com
+
+  # Monitoring Dashboard
+  - type: web
+    name: veritas-monitoring
+    env: node
+    plan: free
+    buildCommand: "npm run build"
+    startCommand: "npm start"
+    healthCheckPath: /monitoring/health
+    autoDeploy: true
+    dockerfilePath: ./Dockerfile.monitoring
+    dockerContext: ./monitoring
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: MONITORING_API_URL
+        value: https://veritas-ww2z.onrender.com
+      - key: METRICS_RETENTION_DAYS
+        value: 30
+
+  # Analytics Service
+  - type: web
+    name: veritas-analytics
+    env: node
+    plan: free
+    buildCommand: "npm run build"
+    startCommand: "npm start"
+    healthCheckPath: /analytics/health
+    autoDeploy: true
+    dockerfilePath: ./Dockerfile.analytics
+    dockerContext: ./analytics
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3002
+      - key: ANALYTICS_API_URL
+        value: https://veritas-ww2z.onrender.com
+      - key: DATABASE_URL
+        sync: false
+
+# Build configuration
+build:
+  dockerfilePath: ./Dockerfile.render
+  dockerContext: .
+  builder:
+    type: node
+    version: 20
+
+# Runtime configuration
+runtime:
+  nodeVersion: 20
+  memoryLimit: 512Mi
+  cpuLimit: 0.5
+
+# Auto-scaling configuration
+autoscaling:
+  enabled: true
+  minInstances: 1
+  maxInstances: 3
+  targetCPU: 70
+  targetMemory: 80
