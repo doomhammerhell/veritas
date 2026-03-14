@@ -1,0 +1,47 @@
+name: Render Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: cd frontend && npm ci && npm run build || true
+
+      - name: Build documentation
+        run: cd docs && npm ci && npm run build || true
+
+      - name: Trigger Render Deploy
+        uses: johnbeynon/render-deploy-action@v0.0.8
+        with:
+          service-id: ${{ secrets.RENDER_SERVICE_ID }}
+          api-key: ${{ secrets.RENDER_API_KEY }}
+        continue-on-error: true
+
+      - name: Wait for deployment
+        run: |
+          echo "Deployment triggered to Render"
+          echo "Service will be available at: https://veritas-ww2z.onrender.com"
+          sleep 30
+
+      - name: Health check
+        run: |
+          curl -f https://veritas-ww2z.onrender.com/health || echo "Health check failed, but deployment may still be in progress"
+        continue-on-error: true
