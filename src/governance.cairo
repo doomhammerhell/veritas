@@ -25,11 +25,11 @@ pub trait IEmergencyControls<T> {
 // ===================================================================
 #[starknet::contract]
 pub mod DAOGovernance {
-    use super::IDAOGovernance;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
         StoragePointerWriteAccess,
     };
+    use super::IDAOGovernance;
 
     #[storage]
     struct Storage {
@@ -128,8 +128,8 @@ pub mod DAOGovernance {
 // ===================================================================
 #[starknet::contract]
 pub mod EmergencyControls {
-    use super::IEmergencyControls;
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+    use super::IEmergencyControls;
 
     #[storage]
     struct Storage {

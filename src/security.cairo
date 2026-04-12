@@ -22,11 +22,11 @@ pub trait IAuditTrail<T> {
 // ===================================================================
 #[starknet::contract]
 pub mod AccessControl {
-    use super::IAccessControl;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
         StoragePointerWriteAccess,
     };
+    use super::IAccessControl;
 
     #[storage]
     struct Storage {
@@ -48,9 +48,7 @@ pub mod AccessControl {
             self.roles.write((role, account), true);
         }
 
-        fn revoke_role(
-            ref self: ContractState, role: felt252, account: starknet::ContractAddress,
-        ) {
+        fn revoke_role(ref self: ContractState, role: felt252, account: starknet::ContractAddress) {
             let caller = starknet::get_caller_address();
             assert(caller == self.admin.read(), 'Admin access required');
             self.roles.write((role, account), false);
@@ -82,11 +80,10 @@ pub mod AccessControl {
 // ===================================================================
 #[starknet::contract]
 pub mod AuditTrail {
-    use super::IAuditTrail;
     use starknet::storage::{
-        Map, StorageMapWriteAccess, StoragePointerReadAccess,
-        StoragePointerWriteAccess,
+        Map, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
+    use super::IAuditTrail;
 
     #[storage]
     struct Storage {
@@ -105,9 +102,7 @@ pub mod AuditTrail {
 
     #[abi(embed_v0)]
     impl AuditTrailImpl of IAuditTrail<ContractState> {
-        fn log_action(
-            ref self: ContractState, action: felt252, actor: starknet::ContractAddress,
-        ) {
+        fn log_action(ref self: ContractState, action: felt252, actor: starknet::ContractAddress) {
             let idx = self.log_count.read();
             self.log_actions.write(idx, action);
             self.log_actors.write(idx, actor);

@@ -34,12 +34,12 @@ pub trait IVeritas<T> {
 
 #[starknet::contract]
 pub mod Veritas {
-    use super::IVeritas;
     use core::pedersen::pedersen;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
         StoragePointerWriteAccess,
     };
+    use super::IVeritas;
 
     // We use has_committed bool to track state, not a sentinel on the commitment
     // value. This eliminates the EMPTY_COMMITMENT=0 edge case entirely:
@@ -109,11 +109,7 @@ pub mod Veritas {
     /// reveal_dur   — reveal phase duration in seconds
     #[constructor]
     fn constructor(
-        ref self: ContractState,
-        admin: felt252,
-        num_options: u8,
-        commit_dur: u64,
-        reveal_dur: u64,
+        ref self: ContractState, admin: felt252, num_options: u8, commit_dur: u64, reveal_dur: u64,
     ) {
         assert(num_options >= 2, 'Need at least 2 options');
         assert(commit_dur > 0, 'Commit duration must be > 0');
@@ -199,9 +195,7 @@ pub mod Veritas {
             self.paused.write(true);
             self
                 .emit(
-                    EmergencyPaused {
-                        admin: caller, timestamp: starknet::get_block_timestamp(),
-                    },
+                    EmergencyPaused { admin: caller, timestamp: starknet::get_block_timestamp() },
                 );
         }
 
@@ -212,9 +206,7 @@ pub mod Veritas {
             self.paused.write(false);
             self
                 .emit(
-                    EmergencyUnpaused {
-                        admin: caller, timestamp: starknet::get_block_timestamp(),
-                    },
+                    EmergencyUnpaused { admin: caller, timestamp: starknet::get_block_timestamp() },
                 );
         }
 

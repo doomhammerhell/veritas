@@ -1,7 +1,7 @@
 use core::pedersen::pedersen;
 use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address,
-    stop_cheat_caller_address, start_cheat_block_timestamp, stop_cheat_block_timestamp,
+    ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp,
+    start_cheat_caller_address, stop_cheat_block_timestamp, stop_cheat_caller_address,
 };
 use starknet::{ContractAddress, contract_address_const};
 use veritas::{IVeritasDispatcher, IVeritasDispatcherTrait};
@@ -13,12 +13,7 @@ fn deploy(
     num_options: u8, commit_dur: u64, reveal_dur: u64,
 ) -> (ContractAddress, IVeritasDispatcher) {
     let contract = declare("Veritas").unwrap().contract_class();
-    let calldata = array![
-        ADMIN_FELT,
-        num_options.into(),
-        commit_dur.into(),
-        reveal_dur.into(),
-    ];
+    let calldata = array![ADMIN_FELT, num_options.into(), commit_dur.into(), reveal_dur.into()];
     let (addr, _) = contract.deploy(@calldata).unwrap();
     (addr, IVeritasDispatcher { contract_address: addr })
 }

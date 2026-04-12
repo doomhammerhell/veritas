@@ -1,16 +1,16 @@
 use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address,
-    stop_cheat_caller_address, start_cheat_block_timestamp,
+    ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp,
+    start_cheat_caller_address, stop_cheat_caller_address,
 };
 use starknet::{ContractAddress, contract_address_const};
-use veritas::governance::{IDAOGovernanceDispatcher, IDAOGovernanceDispatcherTrait};
-use veritas::governance::{IEmergencyControlsDispatcher, IEmergencyControlsDispatcherTrait};
+use veritas::governance::{
+    IDAOGovernanceDispatcher, IDAOGovernanceDispatcherTrait, IEmergencyControlsDispatcher,
+    IEmergencyControlsDispatcherTrait,
+};
 
 const ADMIN_FELT: felt252 = 999;
 
-fn deploy_governance(
-    quorum: u32, delay: u64,
-) -> (ContractAddress, IDAOGovernanceDispatcher) {
+fn deploy_governance(quorum: u32, delay: u64) -> (ContractAddress, IDAOGovernanceDispatcher) {
     let contract = declare("DAOGovernance").unwrap().contract_class();
     let admin = contract_address_const::<999>();
     let mut calldata = array![];

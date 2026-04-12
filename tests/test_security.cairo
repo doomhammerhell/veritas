@@ -3,8 +3,10 @@ use snforge_std::{
     stop_cheat_caller_address,
 };
 use starknet::{ContractAddress, contract_address_const};
-use veritas::security::{IAccessControlDispatcher, IAccessControlDispatcherTrait};
-use veritas::security::{IAuditTrailDispatcher, IAuditTrailDispatcherTrait};
+use veritas::security::{
+    IAccessControlDispatcher, IAccessControlDispatcherTrait, IAuditTrailDispatcher,
+    IAuditTrailDispatcherTrait,
+};
 
 fn deploy_access_control() -> (ContractAddress, IAccessControlDispatcher) {
     let contract = declare("AccessControl").unwrap().contract_class();
