@@ -14,6 +14,7 @@ export default defineConfig({
         text: 'Getting Started',
         items: [
           { text: 'Quick Start', link: '/guide/quick-start' },
+          { text: 'Deploy to Testnet', link: '/guide/deploy-testnet' },
         ],
       },
       {

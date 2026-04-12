@@ -1,95 +1,16 @@
 {
-  "name": "Veritas Development Environment",
-  "dockerComposeFile": "../docker-compose.yml",
-  "service": "veritas",
-  "workspaceFolder": "/app",
-  
-  // Features to install in the container
+  "name": "Veritas Dev",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
   "features": {
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "20",
-      "nodeGypDependencies": true
-    },
-    "ghcr.io/devcontainers/features/rust:1": {
-      "version": "latest",
-      "profile": "minimal"
-    },
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
-    "ghcr.io/devcontainers/features/git:1": {}
+    "ghcr.io/devcontainers/features/node:1": { "version": "20" },
+    "ghcr.io/devcontainers/features/rust:1": { "version": "latest" }
   },
-
-  // VS Code extensions to install
+  "postCreateCommand": "curl --proto '=https' --tlsv1.2 -sSf https://docs.swmansion.com/scarb/install.sh | sh -s -- -v 2.16.0 && curl -L https://raw.githubusercontent.com/foundry-rs/starknet-foundry/master/scripts/install.sh | sh -s -- -v 0.57.0 && npm install",
   "customizations": {
     "vscode": {
       "extensions": [
-        "ms-vscode.vscode-typescript-next",
-        "esbenp.prettier-vscode",
-        "dbaeumer.vscode-eslint",
-        "ms-vscode.vscode-json",
-        "redhat.vscode-yaml",
-        "ms-vscode.vscode-markdown",
-        "ms-vscode.vscode-docker",
-        "github.copilot",
-        "github.copilot-chat",
-        "starkware.cairo",
-        "nileio.nile-vscode",
-        "ms-vscode.vscode-git-graph"
-      ],
-      "settings": {
-        "editor.formatOnSave": true,
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "editor.codeActionsOnSave": {
-          "source.fixAll.eslint": true,
-          "source.organizeImports": true
-        },
-        "typescript.preferences.importModuleSpecifier": "relative",
-        "files.exclude": {
-          "**/node_modules": true,
-          "**/target": true,
-          "**/.git": true,
-          "**/.DS_Store": true
-        },
-        "search.exclude": {
-          "**/node_modules": true,
-          "**/target": true,
-          "**/dist": true,
-          "**/build": true
-        }
-      }
+        "starkware.cairo1"
+      ]
     }
-  },
-
-  // Ports to forward
-  "forwardPorts": [3000, 5173, 8080, 5432, 6379, 9090, 3001, 16686],
-
-  // Post-create commands
-  "postCreateCommand": "npm install && npm run prepare && source ~/.cargo/env && cargo install scarb && scarb fetch",
-
-  // User configuration
-  "remoteUser": "veritas",
-  
-  // Mount additional volumes
-  "mounts": [
-    "source=${localWorkspaceFolder}/.git,target=/app/.git,type=bind,consistency=cached",
-    "source=${localWorkspaceFolder}/logs,target=/app/logs,type=bind,consistency=cached"
-  ],
-
-  // Environment variables
-  "remoteEnv": {
-    "NODE_ENV": "development",
-    "STARKNET_NETWORK": "testnet",
-    "PATH": "/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/veritas/.cargo/bin"
-  },
-
-  // Lifecycle scripts
-  "onCreateCommand": "echo 'Setting up Veritas development environment...'",
-  "postStartCommand": "echo 'Veritas development environment is ready!'",
-  
-  // Health check
-  "healthCheck": {
-    "command": "curl -f http://localhost:3000/health || exit 1",
-    "interval": "30s",
-    "timeout": "10s",
-    "retries": 3
   }
 }
