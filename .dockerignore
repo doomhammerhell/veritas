@@ -1,52 +1,8 @@
-# Dependencies
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Build outputs
 target/
-dist/
-build/
-
-# Environment files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Git
+node_modules/
 .git/
-.gitignore
-
-# Logs
-logs/
-*.log
-
-# Cache
-.cache/
-.npm/
-
-# Test coverage
-coverage/
-
-# Temporary files
-tmp/
-temp/
-
-# Documentation (build in container)
-docs/build/
-
-# Frontend (build in container)
-frontend/build/
+.snfoundry_cache/
+.kirograph/
+docs/node_modules/
+frontend/node_modules/
+*.md

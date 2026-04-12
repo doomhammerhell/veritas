@@ -1,344 +1,94 @@
-# Veritas - Enterprise-Grade StarkNet Voting System
+# Veritas
 
-## 🚀 Overview
+Secure commit-reveal blind voting on StarkNet.
 
-Veritas is a sophisticated ZK-powered blind voting system built on StarkNet using Cairo 1.0. The project implements a comprehensive Commit-Reveal scheme to prevent Social Herd Bias in community voting, featuring enterprise-grade security, advanced governance mechanisms, and cutting-edge cryptographic protections.
+## What it does
 
-## 🏗️ Architecture
+Veritas is a voting protocol where votes are hidden during the voting period and only revealed after it ends. This prevents strategic voting, front-running, and vote manipulation.
 
-### Core Components
+The protocol uses a two-phase commit-reveal scheme with Pedersen hash for cryptographic binding.
 
-- **Core Module**: Storage management, contract initialization, admin controls
-- **Voting Module**: Multiple voting mechanisms (Basic, Quadratic, Delegated, Timelocked, Multiphase)
-- **Governance Module**: DAO governance, multisig admin, emergency controls, proposal system
-- **Security Module**: ZK proofs, access control, quantum resistance, audit trail
-- **AI Module**: Consciousness-based AI, ML assistants, neural governance, swarm intelligence
-- **Analytics Module**: Insights engine, ML predictions, performance metrics, voting patterns
-- **Optimization Module**: Gas optimization, batch processing, lazy loading, storage packing
-- **Quantum Module**: Quantum resistance, quantum entanglement, DNA cryptography, time dilation
-- **Interoperability Module**: Cross-chain bridge, multi-chain voting, bridge security, chain abstraction
+## How it works
 
-### Key Features
+1. **Commit phase** — Voters submit `pedersen(vote, salt)` as a commitment. The vote stays secret.
+2. **Reveal phase** — After the commit deadline, voters reveal their `(vote, salt)`. The contract verifies the hash matches.
+3. **Finality** — After the reveal deadline, no more state changes. Results are final.
 
-- **Commit-Reveal Voting**: Prevents Social Herd Bias through Pedersen hash commitments
-- **Time-Phased Voting**: Separate commit and reveal phases with time controls
-- **Admin Controls**: Emergency closure, deadline extension, role-based access
-- **Input Validation**: Comprehensive validation for all user inputs
-- **Audit Trail**: Complete audit logging for transparency
-- **Advanced Security**: Quantum resistance, ZK proofs, multi-signature support
-- **AI-Powered Analytics**: Machine learning insights and predictive analytics
-- **Cross-Chain Compatibility**: Multi-chain voting and interoperability
+## Invariants
 
-## 📋 Requirements
+| # | Property | Enforcement |
+|---|----------|-------------|
+| INV-1 | One vote per address | `has_committed` + `has_revealed` booleans |
+| INV-2 | Cryptographic binding | `pedersen(vote, salt) == stored_commitment` |
+| INV-3 | Reveals ≤ commits | `has_committed` required before reveal |
+| INV-4 | Temporal phases | `commit_end` and `reveal_end` timestamps |
+| INV-5 | Finality + emergency | `reveal_end` closes voting; admin can pause |
+| INV-6 | Vote validity | `vote < num_options` checked on reveal |
 
-- **Node.js** >= 16.0.0
-- **Starkli** for deployment
-- **Cairo 1.0** compiler
-- **Scarb** for building
+## Project structure
 
-## 🛠️ Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/your-org/veritas.git
-cd veritas
-
-# Install dependencies
-npm install
-
-# Build the contract
-npm run build:cairo
-
-# Run tests
-npm run test
+```
+src/
+  lib.cairo              — crate root, re-exports
+  veritas_main.cairo     — main voting contract (commit-reveal + admin)
+  governance.cairo        — DAO proposals + emergency controls
+  security.cairo          — access control + audit trail
+tests/
+  test_contract.cairo    — 22 tests for the main contract
+  test_governance.cairo  — 10 tests for governance
+  test_security.cairo    — 7 tests for security
+  manual_test.cairo      — Pedersen hash property tests
 ```
 
-## 🔧 Development
-
-### Building
+## Build
 
 ```bash
-# Build the contract
-npm run build:cairo
-
-# Build for production
-npm run build:cairo:release
+scarb build
 ```
 
-### Testing
+## Test
 
 ```bash
-# Run unit tests
-npm run test
-
-# Run integration tests
-npm run test:integration
-
-# Run coverage
-npm run test:coverage
+snforge test
 ```
 
-### Deployment
+Requires [Starknet Foundry](https://github.com/foundry-rs/starknet-foundry).
 
-```bash
-# Deploy to testnet
-./scripts/deploy.sh testnet
+## Constructor parameters
 
-# Deploy to mainnet
-./scripts/deploy.sh mainnet
-```
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `admin` | `felt252` | Admin address for emergency pause/unpause |
+| `num_options` | `u8` | Number of valid vote options (≥ 2) |
+| `commit_dur` | `u64` | Commit phase duration in seconds |
+| `reveal_dur` | `u64` | Reveal phase duration in seconds |
 
-## 📊 Contract Structure
-
-### Main Interface (IVeritas)
+## Contract interface
 
 ```cairo
-#[starknet::interface]
-pub trait IVeritas<T> {
+trait IVeritas<T> {
+    // Voter
     fn commit_vote(ref self: T, commitment: felt252);
-    fn reveal_vote(ref self: T, vote: u32, salt: felt252);
-    fn get_results(self: @T) -> Array<u32>;
-    fn get_voting_status(self: @T) -> bool;
-    
-    // Admin functions
-    fn start_voting(ref self: T, duration: u64);
-    fn end_voting(ref self: T);
-    fn extend_deadline(ref self: T, extra_time: u64);
+    fn reveal_vote(ref self: T, vote: u8, salt: felt252);
+
+    // Admin
+    fn emergency_pause(ref self: T);
+    fn emergency_unpause(ref self: T);
+    fn transfer_admin(ref self: T, new_admin: felt252);
+
+    // View
+    fn get_tally(self: @T, vote: u8) -> u32;
+    fn get_total_commits(self: @T) -> u32;
+    fn get_total_reveals(self: @T) -> u32;
+    fn get_num_options(self: @T) -> u8;
+    fn get_commit_end(self: @T) -> u64;
+    fn get_reveal_end(self: @T) -> u64;
+    fn is_paused(self: @T) -> bool;
+    fn get_admin(self: @T) -> felt252;
+    fn get_phase(self: @T) -> u8; // 0=commit, 1=reveal, 2=ended, 3=paused
 }
 ```
 
-### Storage Structure
+## License
 
-```cairo
-#[storage]
-struct Storage {
-    // Voting data
-    admin: felt252,
-    voting_active: bool,
-    start_time: u64,
-    end_time: u64,
-    yes_votes: u32,
-    no_votes: u32,
-}
-```
-
-## 🔒 Security Features
-
-### Zero-Knowledge Proofs
-- Pedersen hash commitments
-- Non-interactive zero-knowledge proofs
-- Verification without revealing vote
-
-### Access Control
-- Role-based permissions
-- Admin-only functions
-- Multi-signature support
-
-### Quantum Resistance
-- Post-quantum cryptographic algorithms
-- Quantum-safe key generation
-- Future-proof security
-
-### Audit Trail
-- Complete action logging
-- Immutable audit records
-- Transparency and accountability
-
-## 📈 Voting Mechanisms
-
-### Basic Voting
-- Simple majority voting
-- One vote per address
-- Real-time results
-
-### Quadratic Voting
-- Vote weight = sqrt(credits)
-- Prevents whale domination
-- Fair power distribution
-
-### Delegated Voting
-- Vote delegation to trusted parties
-- Liquid democracy
-- Revocable delegations
-
-### Timelocked Voting
-- Commit-reveal with time locks
-- Prevents last-minute manipulation
-- Secure vote casting
-
-### Multiphase Voting
-- Multiple voting phases
-- Advanced governance
-- Complex decision making
-
-## 🤖 AI & Analytics Features
-
-### Consciousness-Based AI
-- Adaptive learning systems
-- Collective intelligence
-- Evolutionary algorithms
-
-### ML Assistants
-- Automated decision support
-- Pattern recognition
-- Predictive analytics
-
-### Neural Governance
-- Deep learning models
-- Autonomous decision making
-- Network optimization
-
-### Swarm Intelligence
-- Distributed consensus
-- Collective behavior
-- Emergent intelligence
-
-### Insights Engine
-- Real-time analytics
-- Trend analysis
-- Performance metrics
-
-### Voting Patterns
-- Behavioral analysis
-- Anomaly detection
-- Predictive modeling
-
-## ⚡ Optimization Features
-
-### Gas Optimization
-- Efficient contract execution
-- Cost reduction strategies
-- Performance tuning
-
-### Batch Processing
-- Bulk operations
-- Transaction batching
-- Throughput optimization
-
-### Lazy Loading
-- On-demand data loading
-- Memory efficiency
-- Performance optimization
-
-### Storage Packing
-- Compact data storage
-- Cost optimization
-- Efficiency improvements
-
-## 🔬 Quantum Features
-
-### Quantum Resistance
-- Post-quantum cryptography
-- Quantum-safe algorithms
-- Future-proof security
-
-### Quantum Entanglement
-- Quantum correlations
-- Secure communications
-- Advanced cryptography
-
-### DNA Cryptography
-- Biological encryption
-- Genetic algorithms
-- Bio-inspired security
-
-### Time Dilation
-- Temporal controls
-- Time-locked operations
-- Advanced security
-
-## 🌐 Interoperability Features
-
-### Cross-Chain Bridge
-- Multi-chain connectivity
-- Asset transfer
-- Protocol bridging
-
-### Multi-Chain Voting
-- Cross-chain governance
-- Distributed voting
-- Chain-agnostic decisions
-
-### Bridge Security
-- Secure transfers
-- Validation mechanisms
-- Risk management
-
-### Chain Abstraction
-- Unified interface
-- Protocol abstraction
-- Simplified interactions
-
-## 📚 Documentation
-
-- [API Reference](./docs/api.md)
-- [Security Audit](./docs/audit.md)
-- [Deployment Guide](./docs/deployment.md)
-- [Architecture Overview](./docs/architecture.md)
-- [AI Integration Guide](./docs/ai-integration.md)
-- [Quantum Security Guide](./docs/quantum-security.md)
-- [Interoperability Guide](./docs/interoperability.md)
-
-## 🔍 Monitoring
-
-### Metrics
-- Vote participation rate
-- Gas usage optimization
-- Security event tracking
-- Performance analytics
-- AI model accuracy
-- Cross-chain activity
-
-### Alerts
-- Emergency pause triggers
-- Unusual activity detection
-- Security breach alerts
-- System health monitoring
-- Performance degradation
-- Quantum threats
-
-## 🌐 Network Support
-
-### Testnet
-- StarkNet Testnet
-- Free deployment
-- Test tokens available
-- Full feature testing
-
-### Mainnet
-- StarkNet Mainnet
-- Production deployment
-- Real economic value
-- High security
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-- **Discord**: [Veritas Community](https://discord.gg/veritas)
-- **Twitter**: [@VeritasVoting](https://twitter.com/VeritasVoting)
-- **Documentation**: [docs.veritas.io](https://docs.veritas.io)
-- **GitHub Issues**: [Report Issues](https://github.com/your-org/veritas/issues)
-
-## 🏆 Acknowledgments
-
-- StarkWare for Cairo and StarkNet
-- OpenZeppelin for security standards
-- Community contributors and testers
-- Security audit partners
-- Quantum cryptography researchers
-- AI and ML research community
-
----
-
-**Built with ❤️ for decentralized governance and enterprise-grade security**
+MIT

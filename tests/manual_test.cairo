@@ -1,57 +1,37 @@
-#[cfg(test)]
-mod tests {
-    use veritas::IVeritasDispatcher;
-    use veritas::IVeritasDispatcherTrait;
-    use starknet::ContractAddress;
-    use starknet::contract_address_const;
-    use core::pedersen::pedersen;
+use core::pedersen::pedersen;
 
-    #[test]
-    fn test_manual_voting_flow() {
-        // Simulate voting flow without snforge
-        
-        // Test data
-        let vote: u8 = 1;
-        let salt: felt252 = 12345;
-        let commitment = pedersen(vote.into(), salt);
-        
-        // Verify hash calculation
-        let expected_hash = pedersen(vote.into(), salt);
-        assert(commitment == expected_hash, 'Hash calculation failed');
-        
-        // Test vote validation
-        assert(vote > 0 && vote <= 5, 'Invalid vote option');
-        
-        // Test salt generation
-        let different_salt = 54321;
-        let different_commitment = pedersen(vote.into(), different_salt);
-        assert(commitment != different_commitment, 'Same salt should produce different hash');
-        
-        println('✅ Manual test passed: Basic voting logic works');
-    }
-    
-    #[test]
-    fn test_hash_verification() {
-        // Test cryptographic verification logic
-        
-        let vote: u8 = 2;
-        let salt: felt252 = 99999;
-        let commitment = pedersen(vote.into(), salt);
-        
-        // Correct reveal should pass
-        let verify_hash = pedersen(vote.into(), salt);
-        assert(verify_hash == commitment, 'Correct reveal should pass');
-        
-        // Wrong vote should fail
-        let wrong_vote = 3;
-        let wrong_hash = pedersen(wrong_vote.into(), salt);
-        assert(wrong_hash != commitment, 'Wrong vote should fail');
-        
-        // Wrong salt should fail
-        let wrong_salt = 11111;
-        let wrong_salt_hash = pedersen(vote.into(), wrong_salt);
-        assert(wrong_salt_hash != commitment, 'Wrong salt should fail');
-        
-        println('✅ Manual test passed: Hash verification works');
-    }
+#[test]
+fn test_pedersen_binding() {
+    let vote: u8 = 1;
+    let salt: felt252 = 12345;
+    let c = pedersen(vote.into(), salt);
+
+    assert(c == pedersen(vote.into(), salt), 'deterministic');
+    assert(c != pedersen(vote.into(), 54321), 'different salt');
+    assert(c != pedersen(2_u8.into(), salt), 'different vote');
+}
+
+#[test]
+fn test_pedersen_hiding() {
+    let h0 = pedersen(0_u8.into(), 99999);
+    let h1 = pedersen(1_u8.into(), 99999);
+    assert(h0 != h1, 'different votes differ');
+    assert(h0 != 0_u8.into(), 'hash != vote');
+    assert(h0 != 99999, 'hash != salt');
+}
+
+#[test]
+fn test_all_options_produce_unique_hashes() {
+    let salt: felt252 = 42;
+    let h0 = pedersen(0_u8.into(), salt);
+    let h1 = pedersen(1_u8.into(), salt);
+    let h2 = pedersen(2_u8.into(), salt);
+    let h3 = pedersen(3_u8.into(), salt);
+    let h4 = pedersen(4_u8.into(), salt);
+
+    assert(h0 != h1, '0!=1');
+    assert(h1 != h2, '1!=2');
+    assert(h2 != h3, '2!=3');
+    assert(h3 != h4, '3!=4');
+    assert(h0 != h4, '0!=4');
 }

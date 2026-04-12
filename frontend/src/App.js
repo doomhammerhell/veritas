@@ -1,378 +1,300 @@
-import React, { useState, useEffect } from 'react';
-import { useAccount, useConnectors } from '@starknet-react/core';
+import React, { useState, useEffect, useCallback } from 'react';
+import { connect, disconnect } from 'get-starknet-core';
+import { Contract, RpcProvider, hash, CallData, cairo } from 'starknet';
+import { VERITAS_ABI } from './abi';
 import './App.css';
 
-// Veritas Contract ABI (simplified)
-const VERITAS_ABI = [
-  {
-    "type": "function",
-    "name": "commit_vote",
-    "inputs": [{"name": "commitment", "type": "felt"}],
-    "outputs": [],
-    "stateMutability": "external"
-  },
-  {
-    "type": "function", 
-    "name": "reveal_vote",
-    "inputs": [
-      {"name": "vote", "type": "u8"},
-      {"name": "salt", "type": "felt"}
-    ],
-    "outputs": [],
-    "stateMutability": "external"
-  },
-  {
-    "type": "function",
-    "name": "get_tally",
-    "inputs": [{"name": "option", "type": "u8"}],
-    "outputs": [{"name": "tally", "type": "u128"}],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "has_voted",
-    "inputs": [{"name": "address", "type": "ContractAddress"}],
-    "outputs": [{"name": "voted", "type": "bool"}],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "is_voting_closed",
-    "inputs": [],
-    "outputs": [{"name": "closed", "type": "bool"}],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "get_total_voters",
-    "inputs": [],
-    "outputs": [{"name": "total", "type": "u128"}],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "get_max_options",
-    "inputs": [],
-    "outputs": [{"name": "max", "type": "u8"}],
-    "stateMutability": "view"
-  }
-];
+const CONTRACT_ADDRESS = process.env.REACT_APP_CONTRACT_ADDRESS || '';
+const NETWORK = process.env.REACT_APP_STARKNET_NETWORK || 'sepolia';
 
-// Contract configuration
-const CONTRACT_ADDRESS = process.env.REACT_APP_CONTRACT_ADDRESS || "0x..."; // Replace with deployed contract
+const RPC_URLS = {
+  sepolia: 'https://starknet-sepolia.public.blastapi.io/rpc/v0_7',
+  mainnet: 'https://starknet-mainnet.public.blastapi.io/rpc/v0_7',
+};
+
+const PHASE_LABELS = ['Commit Phase', 'Reveal Phase', 'Voting Ended', 'Paused'];
+const PHASE_COLORS = ['#22c55e', '#3b82f6', '#6b7280', '#ef4444'];
+
+function computePedersenCommitment(vote, salt) {
+  return hash.computePedersenHash(vote.toString(), salt);
+}
+
+function generateSalt() {
+  const arr = new Uint8Array(31); // felt252 < 2^251
+  crypto.getRandomValues(arr);
+  return '0x' + Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('');
+}
 
 function App() {
-  const { address, isConnected } = useAccount();
-  const { connect, connectors } = useConnectors();
-  const [votingState, setVotingState] = useState('idle');
-  const [selectedVote, setSelectedVote] = useState(1);
-  const [results, setResults] = useState([]);
-  const [votingInfo, setVotingInfo] = useState({
-    totalVoters: 0,
-    maxOptions: 5,
-    isClosed: false,
-    hasVoted: false
-  });
-  const [error, setError] = useState('');
+  const [wallet, setWallet] = useState(null);
+  const [account, setAccount] = useState(null);
+  const [provider] = useState(new RpcProvider({ nodeUrl: RPC_URLS[NETWORK] }));
+
+  const [phase, setPhase] = useState(0);
+  const [numOptions, setNumOptions] = useState(2);
+  const [commitEnd, setCommitEnd] = useState(0);
+  const [revealEnd, setRevealEnd] = useState(0);
+  const [totalCommits, setTotalCommits] = useState(0);
+  const [totalReveals, setTotalReveals] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [tallies, setTallies] = useState([]);
+
+  const [selectedVote, setSelectedVote] = useState(0);
+  const [votingState, setVotingState] = useState('idle'); // idle | committed | revealed
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [txHash, setTxHash] = useState('');
 
-  // Generate Pedersen hash (simplified - in production use proper Starknet library)
-  const generateCommitment = (vote, salt) => {
-    // This is a simplified hash function for demo
-    // In production, use actual Pedersen hash from Starknet library
-    const hashInput = `${vote}${salt}`;
-    let hash = 0;
-    for (let i = 0; i < hashInput.length; i++) {
-      hash = ((hash << 5) - hash) + hashInput.charCodeAt(i);
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    return hash.toString();
-  };
+  const getReadContract = useCallback(() => {
+    if (!CONTRACT_ADDRESS) return null;
+    return new Contract(VERITAS_ABI, CONTRACT_ADDRESS, provider);
+  }, [provider]);
 
-  // Generate secure salt
-  const generateSecureSalt = () => {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-  };
+  const getWriteContract = useCallback(() => {
+    if (!CONTRACT_ADDRESS || !account) return null;
+    return new Contract(VERITAS_ABI, CONTRACT_ADDRESS, account);
+  }, [account]);
 
-  // Load voting information
-  const loadVotingInfo = async () => {
-    if (!isConnected || !address) return;
-    
+  // Load contract state
+  const loadState = useCallback(async () => {
+    const c = getReadContract();
+    if (!c) return;
     try {
-      // Simulate contract calls (in production, use actual Starknet provider)
-      const mockVotingInfo = {
-        totalVoters: 25,
-        maxOptions: 5,
-        isClosed: false,
-        hasVoted: false
-      };
-      setVotingInfo(mockVotingInfo);
-    } catch (err) {
-      console.error('Error loading voting info:', err);
-      setError('Failed to load voting information');
-    }
-  };
+      const [p, n, ce, re, tc, tr, pa] = await Promise.all([
+        c.get_phase(),
+        c.get_num_options(),
+        c.get_commit_end(),
+        c.get_reveal_end(),
+        c.get_total_commits(),
+        c.get_total_reveals(),
+        c.is_paused(),
+      ]);
+      setPhase(Number(p));
+      setNumOptions(Number(n));
+      setCommitEnd(Number(ce));
+      setRevealEnd(Number(re));
+      setTotalCommits(Number(tc));
+      setTotalReveals(Number(tr));
+      setPaused(Boolean(pa));
 
-  // Commit vote
-  const handleCommitVote = async () => {
-    if (!isConnected) {
-      setError('Please connect your wallet first');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError('');
-      setVotingState('committing');
-      
-      const salt = generateSecureSalt();
-      const commitment = generateCommitment(selectedVote, salt);
-      
-      // Store salt locally for reveal phase
-      localStorage.setItem('veritas_salt', salt);
-      localStorage.setItem('veritas_vote', selectedVote.toString());
-      localStorage.setItem('veritas_commitment', commitment);
-      
-      // Simulate contract call (in production, use actual Starknet contract)
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate transaction
-      
-      setVotingState('committed');
-      await loadVotingInfo();
-    } catch (err) {
-      console.error('Commit failed:', err);
-      setError('Failed to commit vote. Please try again.');
-      setVotingState('idle');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Reveal vote
-  const handleRevealVote = async () => {
-    if (!isConnected) {
-      setError('Please connect your wallet first');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError('');
-      setVotingState('revealing');
-      
-      const salt = localStorage.getItem('veritas_salt');
-      const vote = parseInt(localStorage.getItem('veritas_vote'));
-      
-      if (!salt || !vote) {
-        throw new Error('No committed vote found');
+      // Load tallies
+      const opts = Number(n);
+      const tallyPromises = [];
+      for (let i = 0; i < opts; i++) {
+        tallyPromises.push(c.get_tally(i));
       }
-      
-      // Simulate contract call (in production, use actual Starknet contract)
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate transaction
-      
-      // Clear local storage
-      localStorage.removeItem('veritas_salt');
-      localStorage.removeItem('veritas_vote');
-      localStorage.removeItem('veritas_commitment');
-      
-      setVotingState('revealed');
-      await loadVotingInfo();
-      await loadResults();
-    } catch (err) {
-      console.error('Reveal failed:', err);
-      setError('Failed to reveal vote. Please try again.');
-      setVotingState('committed');
-    } finally {
-      setLoading(false);
+      const results = await Promise.all(tallyPromises);
+      setTallies(results.map(Number));
+    } catch (e) {
+      console.error('Failed to load state:', e);
     }
-  };
-
-  // Load voting results
-  const loadResults = async () => {
-    try {
-      // Simulate results (in production, use actual contract calls)
-      const mockResults = [
-        { option: 1, votes: 8, percentage: 32 },
-        { option: 2, votes: 12, percentage: 48 },
-        { option: 3, votes: 3, percentage: 12 },
-        { option: 4, votes: 2, percentage: 8 },
-        { option: 5, votes: 0, percentage: 0 }
-      ];
-      setResults(mockResults);
-    } catch (err) {
-      console.error('Error loading results:', err);
-      setError('Failed to load results');
-    }
-  };
-
-  // Format time remaining
-  const formatTimeRemaining = () => {
-    // Simulate deadline (in production, get from contract)
-    const deadline = new Date();
-    deadline.setHours(deadline.getHours() + 24); // 24 hours from now
-    
-    const now = new Date();
-    const remaining = deadline - now;
-    
-    if (remaining <= 0) return 'Voting ended';
-    
-    const hours = Math.floor(remaining / (1000 * 60 * 60));
-    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-    
-    return `${hours}h ${minutes}m remaining`;
-  };
+  }, [getReadContract]);
 
   useEffect(() => {
-    if (isConnected) {
-      loadVotingInfo();
-      loadResults();
+    loadState();
+    const interval = setInterval(loadState, 15000);
+    return () => clearInterval(interval);
+  }, [loadState]);
+
+  // Check if user already committed (from localStorage)
+  useEffect(() => {
+    const saved = localStorage.getItem('veritas_salt');
+    if (saved) setVotingState('committed');
+  }, []);
+
+  const handleConnect = async () => {
+    try {
+      const starknet = await connect();
+      if (!starknet) return;
+      await starknet.enable();
+      setWallet(starknet);
+      setAccount(starknet.account);
+    } catch (e) {
+      setError('Wallet connection failed');
     }
-  }, [isConnected, address]);
+  };
+
+  const handleDisconnect = async () => {
+    await disconnect();
+    setWallet(null);
+    setAccount(null);
+  };
+
+  const handleCommit = async () => {
+    const c = getWriteContract();
+    if (!c) return setError('Connect wallet first');
+    setLoading(true);
+    setError('');
+    setTxHash('');
+    try {
+      const salt = generateSalt();
+      const commitment = computePedersenCommitment(selectedVote, salt);
+
+      const tx = await c.commit_vote(commitment);
+      setTxHash(tx.transaction_hash);
+      await provider.waitForTransaction(tx.transaction_hash);
+
+      localStorage.setItem('veritas_salt', salt);
+      localStorage.setItem('veritas_vote', selectedVote.toString());
+      setVotingState('committed');
+      await loadState();
+    } catch (e) {
+      setError(e.message || 'Commit failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReveal = async () => {
+    const c = getWriteContract();
+    if (!c) return setError('Connect wallet first');
+    setLoading(true);
+    setError('');
+    setTxHash('');
+    try {
+      const salt = localStorage.getItem('veritas_salt');
+      const vote = parseInt(localStorage.getItem('veritas_vote'), 10);
+      if (!salt || isNaN(vote)) throw new Error('No committed vote found locally');
+
+      const tx = await c.reveal_vote(vote, salt);
+      setTxHash(tx.transaction_hash);
+      await provider.waitForTransaction(tx.transaction_hash);
+
+      localStorage.removeItem('veritas_salt');
+      localStorage.removeItem('veritas_vote');
+      setVotingState('revealed');
+      await loadState();
+    } catch (e) {
+      setError(e.message || 'Reveal failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fmtTime = (ts) => (ts ? new Date(ts * 1000).toLocaleString() : '--');
+  const explorerBase =
+    NETWORK === 'mainnet' ? 'https://starkscan.co' : 'https://sepolia.starkscan.co';
 
   return (
     <div className="App">
       <header className="App-header">
-        <h1>🛡️ Veritas</h1>
-        <p>ZK-Powered Blind Voting for Communities</p>
+        <h1>Veritas</h1>
+        <p>Commit-reveal blind voting on StarkNet</p>
+        {!account ? (
+          <button onClick={handleConnect} className="connect-btn">
+            Connect Wallet
+          </button>
+        ) : (
+          <div className="wallet-info">
+            <span>
+              {account.address.slice(0, 6)}...{account.address.slice(-4)}
+            </span>
+            <button onClick={handleDisconnect} className="disconnect-btn">
+              Disconnect
+            </button>
+          </div>
+        )}
       </header>
 
       <main className="App-main">
-        {/* Wallet Connection */}
-        <section className="wallet-section">
-          {!isConnected ? (
-            <div className="connect-wallet">
-              <h2>Connect Your Wallet</h2>
-              <p>Connect your Starknet wallet to participate in voting</p>
-              <div className="connectors">
-                {connectors.map((connector) => (
-                  <button
-                    key={connector.id}
-                    onClick={() => connect(connector)}
-                    className="connect-button"
-                  >
-                    Connect {connector.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="wallet-connected">
-              <p>✅ Connected: {address?.slice(0, 6)}...{address?.slice(-4)}</p>
-            </div>
-          )}
+        {!CONTRACT_ADDRESS && (
+          <div className="error-message">
+            Set REACT_APP_CONTRACT_ADDRESS in .env to connect to a deployed contract.
+          </div>
+        )}
+
+        {error && <div className="error-message">{error}</div>}
+        {txHash && (
+          <div className="tx-link">
+            TX:{' '}
+            <a href={`${explorerBase}/tx/${txHash}`} target="_blank" rel="noreferrer">
+              {txHash.slice(0, 10)}...
+            </a>
+          </div>
+        )}
+
+        <section className="info-grid">
+          <div className="info-card">
+            <h3>Phase</h3>
+            <p style={{ color: PHASE_COLORS[phase] }}>{PHASE_LABELS[phase]}</p>
+          </div>
+          <div className="info-card">
+            <h3>Options</h3>
+            <p>{numOptions}</p>
+          </div>
+          <div className="info-card">
+            <h3>Commits</h3>
+            <p>{totalCommits}</p>
+          </div>
+          <div className="info-card">
+            <h3>Reveals</h3>
+            <p>{totalReveals}</p>
+          </div>
+          <div className="info-card">
+            <h3>Commit Deadline</h3>
+            <p>{fmtTime(commitEnd)}</p>
+          </div>
+          <div className="info-card">
+            <h3>Reveal Deadline</h3>
+            <p>{fmtTime(revealEnd)}</p>
+          </div>
         </section>
 
-        {/* Error Display */}
-        {error && (
-          <section className="error-section">
-            <div className="error-message">
-              ❌ {error}
-            </div>
-          </section>
-        )}
-
-        {/* Voting Information */}
-        {isConnected && (
-          <section className="voting-info">
-            <div className="info-grid">
-              <div className="info-card">
-                <h3>Total Voters</h3>
-                <p className="info-value">{votingInfo.totalVoters}</p>
-              </div>
-              <div className="info-card">
-                <h3>Voting Options</h3>
-                <p className="info-value">{votingInfo.maxOptions}</p>
-              </div>
-              <div className="info-card">
-                <h3>Status</h3>
-                <p className="info-value">
-                  {votingInfo.isClosed ? '🔴 Closed' : '🟢 Open'}
-                </p>
-              </div>
-              <div className="info-card">
-                <h3>Time Remaining</h3>
-                <p className="info-value">{formatTimeRemaining()}</p>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* Voting Interface */}
-        {isConnected && !votingInfo.isClosed && (
+        {/* Commit */}
+        {phase === 0 && votingState === 'idle' && account && (
           <section className="voting-section">
             <h2>Cast Your Vote</h2>
-            
-            {votingState === 'idle' && (
-              <div className="commit-phase">
-                <h3>Commit Phase</h3>
-                <p>Select your option and commit your vote. Your choice will remain secret until the reveal phase.</p>
-                
-                <div className="vote-options">
-                  {Array.from({ length: votingInfo.maxOptions }, (_, i) => i + 1).map((option) => (
-                    <label key={option} className="vote-option">
-                      <input
-                        type="radio"
-                        name="vote"
-                        value={option}
-                        checked={selectedVote === option}
-                        onChange={(e) => setSelectedVote(parseInt(e.target.value))}
-                      />
-                      <span className="option-label">Option {option}</span>
-                    </label>
-                  ))}
-                </div>
-                
-                <button
-                  onClick={handleCommitVote}
-                  disabled={loading}
-                  className="vote-button commit-button"
-                >
-                  {loading ? 'Processing...' : 'Commit Vote'}
-                </button>
-              </div>
-            )}
+            <p>Select an option and commit. Your choice stays secret until the reveal phase.</p>
+            <div className="vote-options">
+              {Array.from({ length: numOptions }, (_, i) => (
+                <label key={i} className="vote-option">
+                  <input
+                    type="radio"
+                    name="vote"
+                    value={i}
+                    checked={selectedVote === i}
+                    onChange={() => setSelectedVote(i)}
+                  />
+                  <span>Option {i}</span>
+                </label>
+              ))}
+            </div>
+            <button onClick={handleCommit} disabled={loading} className="vote-button">
+              {loading ? 'Committing...' : 'Commit Vote'}
+            </button>
+          </section>
+        )}
 
-            {votingState === 'committed' && (
-              <div className="committed-phase">
-                <h3>✅ Vote Committed!</h3>
-                <p>Your vote has been securely committed to the blockchain.</p>
-                <p>Wait for the voting period to end, then return to reveal your vote.</p>
-                <button
-                  onClick={handleRevealVote}
-                  disabled={loading || !votingInfo.isClosed}
-                  className="vote-button reveal-button"
-                >
-                  {loading ? 'Processing...' : votingInfo.isClosed ? 'Reveal Vote' : 'Wait for Voting to End'}
-                </button>
-              </div>
-            )}
-
-            {votingState === 'revealed' && (
-              <div className="revealed-phase">
-                <h3>✅ Vote Revealed!</h3>
-                <p>Thank you for participating! Your vote has been counted.</p>
-              </div>
+        {/* Committed — waiting for reveal phase */}
+        {votingState === 'committed' && (
+          <section className="voting-section">
+            <h2>Vote Committed</h2>
+            <p>Your commitment is on-chain. Return during the reveal phase to finalize.</p>
+            {phase === 1 && account && (
+              <button onClick={handleReveal} disabled={loading} className="vote-button">
+                {loading ? 'Revealing...' : 'Reveal Vote'}
+              </button>
             )}
           </section>
         )}
 
-        {/* Results Display */}
-        {isConnected && (votingInfo.isClosed || votingState === 'revealed') && (
+        {/* Revealed */}
+        {votingState === 'revealed' && (
+          <section className="voting-section">
+            <h2>Vote Revealed</h2>
+            <p>Your vote has been counted.</p>
+          </section>
+        )}
+
+        {/* Results */}
+        {tallies.length > 0 && (
           <section className="results-section">
-            <h2>Voting Results</h2>
+            <h2>Results</h2>
             <div className="results-grid">
-              {results.map((result) => (
-                <div key={result.option} className="result-card">
-                  <h4>Option {result.option}</h4>
-                  <div className="vote-count">{result.votes} votes</div>
-                  <div className="vote-percentage">{result.percentage}%</div>
-                  <div className="vote-bar">
-                    <div 
-                      className="vote-fill" 
-                      style={{ width: `${result.percentage}%` }}
-                    ></div>
-                  </div>
+              {tallies.map((count, i) => (
+                <div key={i} className="result-row">
+                  <span>Option {i}</span>
+                  <span className="result-count">{count} votes</span>
                 </div>
               ))}
             </div>
@@ -381,12 +303,11 @@ function App() {
       </main>
 
       <footer className="App-footer">
-        <p>Built with ❤️ for decentralized communities</p>
-        <p>
-          <a href="https://github.com/doomhammerhell/veritas" target="_blank" rel="noopener noreferrer">
-            GitHub Repository
+        {CONTRACT_ADDRESS && (
+          <a href={`${explorerBase}/contract/${CONTRACT_ADDRESS}`} target="_blank" rel="noreferrer">
+            Contract on Starkscan
           </a>
-        </p>
+        )}
       </footer>
     </div>
   );

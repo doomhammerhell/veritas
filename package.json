@@ -1,87 +1,30 @@
 {
   "name": "veritas",
-  "version": "0.4.0",
-  "description": "Enterprise-grade blind voting system on Starknet",
-  "main": "index.js",
+  "version": "0.5.0",
+  "description": "Secure commit-reveal blind voting on StarkNet",
   "scripts": {
     "prepare": "husky install",
-    "lint:cairo": "scarb fmt --check",
-    "lint:fix:cairo": "scarb fmt",
-    "lint:js": "eslint frontend/src --ext .js,.jsx,.ts,.tsx",
-    "lint:fix:js": "eslint frontend/src --ext .js,.jsx,.ts,.tsx --fix",
-    "format:cairo": "scarb fmt",
-    "format:js": "prettier --write frontend/src/**/*.{js,jsx,ts,tsx,css,md}",
-    "test:cairo": "scarb test",
-    "test:js": "cd frontend && npm test",
-    "test:coverage": "cd frontend && npm run test:coverage",
-    "build:cairo": "scarb build",
-    "build:js": "cd frontend && npm run build",
-    "build:docs": "cd docs && npm run build",
+    "build": "scarb build",
+    "test": "snforge test",
+    "lint": "scarb fmt --check",
+    "format": "scarb fmt",
+    "build:frontend": "cd frontend && npm run build",
     "dev:frontend": "cd frontend && npm start",
-    "dev:docs": "cd docs && npm run dev",
-    "security:audit": "npm audit",
-    "security:cairo": "cairo-audit src/",
-    "pre-commit": "lint-staged",
-    "commit": "git-cz",
-    "release": "semantic-release",
-    "docs:dev": "cd docs && npm run dev",
-    "docs:build": "cd docs && npm run build",
-    "docs:serve": "cd docs && npm run serve"
+    "pre-commit": "lint-staged"
   },
   "lint-staged": {
     "*.cairo": [
-      "scarb fmt --check",
       "scarb fmt"
-    ],
-    "*.{js,jsx,ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{css,md,json}": [
-      "prettier --write"
     ]
   },
   "devDependencies": {
-    "@semantic-release/changelog": "^6.0.3",
-    "@semantic-release/commit-analyzer": "^12.0.0",
-    "@semantic-release/git": "^10.0.1",
-    "@semantic-release/github": "^10.0.3",
-    "@semantic-release/npm": "^11.0.2",
-    "@semantic-release/release-notes-generator": "^12.0.0",
-    "commitizen": "^4.3.0",
-    "cz-conventional-changelog": "^3.3.0",
-    "eslint": "^8.57.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-react": "^7.34.1",
-    "eslint-plugin-react-hooks": "^4.6.0",
     "husky": "^8.0.3",
-    "lint-staged": "^15.2.2",
-    "prettier": "^3.2.5",
-    "semantic-release": "^23.0.2"
-  },
-  "config": {
-    "commitizen": {
-      "path": "./node_modules/cz-conventional-changelog"
-    }
+    "lint-staged": "^15.2.2"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/veritas-org/veritas.git"
+    "url": "https://github.com/doomhammerhell/veritas.git"
   },
-  "keywords": [
-    "blockchain",
-    "starknet",
-    "cairo",
-    "voting",
-    "zero-knowledge",
-    "enterprise",
-    "governance",
-    "dao"
-  ],
-  "author": "Veritas Organization",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/veritas-org/veritas/issues"
-  },
-  "homepage": "https://veritas.io"
+  "keywords": ["starknet", "cairo", "voting", "commit-reveal", "governance"],
+  "license": "MIT"
 }

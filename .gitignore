@@ -1,0 +1,115 @@
+# =========================
+# OS
+# =========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# =========================
+# IDEs & Editors
+# =========================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+.kiro
+.kirograph
+
+# =========================
+# Environment & Secrets
+# =========================
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.testnet
+
+# =========================
+# Node.js
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm
+.yarn/
+.pnp.*
+
+# =========================
+# Cairo / Scarb / Starknet
+# =========================
+target/
+*.sierra
+*.casm
+
+# =========================
+# Frontend (React)
+# =========================
+frontend/build/
+frontend/node_modules/
+frontend/.env.local
+frontend/.env.*.local
+
+# =========================
+# Docs (VitePress)
+# =========================
+docs/node_modules/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+
+# =========================
+# Analytics
+# =========================
+analytics/node_modules/
+
+# =========================
+# Monitoring
+# =========================
+monitoring/node_modules/
+monitoring/logs/*.log
+monitoring/reports/*.json
+monitoring/reports/*.html
+
+# =========================
+# Docker
+# =========================
+docker-compose.override.yml
+
+# =========================
+# Logs & Data
+# =========================
+logs/
+*.log
+data/
+audit
+.snfoundry_cache
+
+# =========================
+# Coverage & Testing
+# =========================
+coverage/
+.nyc_output/
+*.lcov
+
+# =========================
+# Build artifacts
+# =========================
+dist/
+build/
+out/
+
+# =========================
+# Misc
+# =========================
+.cache/
+*.tgz
+*.tar.gz
