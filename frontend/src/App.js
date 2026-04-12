@@ -26,7 +26,7 @@ function generateSalt() {
 }
 
 function App() {
-  const [wallet, setWallet] = useState(null);
+  const [starknetWallet, setStarknetWallet] = useState(null);
   const [account, setAccount] = useState(null);
   const [provider] = useState(new RpcProvider({ nodeUrl: RPC_URLS[NETWORK] }));
 
@@ -107,7 +107,7 @@ function App() {
       const starknet = await connect();
       if (!starknet) return;
       await starknet.enable();
-      setWallet(starknet);
+      setStarknetWallet(starknet);
       setAccount(starknet.account);
     } catch (e) {
       setError('Wallet connection failed');
@@ -115,8 +115,8 @@ function App() {
   };
 
   const handleDisconnect = async () => {
-    await disconnect();
-    setWallet(null);
+    await disconnect({ clearLastWallet: true });
+    setStarknetWallet(null);
     setAccount(null);
   };
 
@@ -189,9 +189,11 @@ function App() {
             <span>
               {account.address.slice(0, 6)}...{account.address.slice(-4)}
             </span>
-            <button onClick={handleDisconnect} className="disconnect-btn">
-              Disconnect
-            </button>
+            {starknetWallet && (
+              <button onClick={handleDisconnect} className="disconnect-btn">
+                Disconnect
+              </button>
+            )}
           </div>
         )}
       </header>
@@ -204,6 +206,7 @@ function App() {
         )}
 
         {error && <div className="error-message">{error}</div>}
+        {paused && <div className="error-message">Contract is paused by admin.</div>}
         {txHash && (
           <div className="tx-link">
             TX:{' '}

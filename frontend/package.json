@@ -8,13 +8,15 @@
     "get-starknet": "^3.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-app-rewired": "^2.2.1",
     "react-scripts": "5.0.1",
-    "starknet": "^6.11.0"
+    "starknet": "^6.11.0",
+    "util": "^0.12.5"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test --passWithNoTests"
+    "start": "react-app-rewired start",
+    "build": "GENERATE_SOURCEMAP=false react-app-rewired build",
+    "test": "react-app-rewired test --passWithNoTests"
   },
   "browserslist": {
     "production": [">0.2%", "not dead", "not op_mini all"],
