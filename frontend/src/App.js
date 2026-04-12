@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { connect, disconnect } from 'get-starknet-core';
-import { Contract, RpcProvider, hash, CallData, cairo } from 'starknet';
+import { connect, disconnect } from 'get-starknet';
+import { Contract, RpcProvider, hash } from 'starknet';
 import { VERITAS_ABI } from './abi';
 import './App.css';
 
