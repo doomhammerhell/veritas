@@ -13,8 +13,8 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.17",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
+    "@typescript-eslint/eslint-plugin": "^8.58.2",
+    "@typescript-eslint/parser": "^8.58.2",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-vue": "^9.20.1",
@@ -24,7 +24,7 @@
     "vue": "^3.4.21"
   },
   "dependencies": {
-    "mermaid": "^10.9.1",
-    "vue-mermaid-string": "^2.0.1"
+    "mermaid": "^11.10.0",
+    "vue-mermaid-string": "^8.0.2"
   }
 }
